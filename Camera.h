@@ -14,6 +14,7 @@
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 // Defines several possible options for camera movement. Used as abstraction to stay away from window-system specific input methods
 enum Camera_Movement {
@@ -106,18 +107,14 @@ public:
 
         // Update Front, Right and Up Vectors using the updated Eular angles
         this->updateCameraVectors();
-
-        cout << this->Yaw << endl;
-        cout << this->Pitch << endl;
-
     }
 
     // Processes input received from a mouse scroll-wheel event. Only requires input on the vertical wheel-axis
     void ProcessMouseScroll(GLfloat yoffset) {
-        if (this->Zoom >= 1.0f && this->Zoom <= 45.0f)
+        if (this->Zoom >= 44.0f && this->Zoom <= 45.0f)
             this->Zoom -= yoffset;
-        if (this->Zoom <= 1.0f)
-            this->Zoom = 1.0f;
+        if (this->Zoom <= 44.0f)
+            this->Zoom = 44.0f;
         if (this->Zoom >= 45.0f)
             this->Zoom = 45.0f;
     }
@@ -139,6 +136,12 @@ private:
         this->Right = glm::normalize(glm::cross(this->Front,
                                                 this->WorldUp));  // Normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
         this->Up = glm::normalize(glm::cross(this->Right, this->Front));
+
+        cout << endl;
+        cout << "[World]" << endl;
+        cout << "  R::" << glm::to_string(this->Right) << endl;
+        cout << "  U::" << glm::to_string(this->Up) << endl;
+        cout << "  F::" << glm::to_string(this->Front) << endl << endl;
     }
 };
 

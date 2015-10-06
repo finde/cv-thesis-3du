@@ -23,6 +23,7 @@ using namespace std;
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 // Other Libs
 #include <SOIL/SOIL.h>
@@ -35,14 +36,14 @@ void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 
-void Do_Movement();
+void Do_Movement(float deltaTime, Shader skyboxShader);
 
-float Update_Progress(float deltaTime);
+float Update_Progress(float deltaTime, Shader skyboxShader);
 
 // This function loads a texture from file. Note: texture loading functions like these are usually
 // managed by a 'Resource Manager' that manages all resources (like textures, models, audio).
 // For learning purposes we'll just define it as a utility function.
-GLuint loadTexture(GLchar *path){
+GLuint loadTexture(GLchar *path) {
     //Generate texture ID and load texture data
     GLuint textureID;
     glGenTextures(1, &textureID);

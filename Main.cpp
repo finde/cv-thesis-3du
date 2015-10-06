@@ -18,12 +18,13 @@ GLfloat lastFrame = 0.0f;
 // Animation
 float progress = 0.0f;
 float direction = 0.0f;
-float speed = 0.5f;
+float speed = 1.5f;
 
 // cube location
 int position = 0;
 float tolerance = 5.0f;
 float cube_speed = 2.5f;
+glm::vec3 vWorldPosition1 = glm::vec3(0.0f, 0.0f, 0.0f);
 
 // The MAIN function, from here we start our application and run our Game loop
 int main() {
@@ -64,8 +65,8 @@ int main() {
     glDepthFunc(GL_LESS);
 
     // Setup and compile our shaders
-    Shader shader("shaders/advanced.vs", "shaders/advanced.frag");
-    Shader skyboxShader("shaders/skybox.vs", "shaders/skybox.frag");
+    Shader shader("shaders/advanced.vert", "shaders/advanced.frag");
+    Shader skyboxShader("shaders/skybox.vert", "shaders/skybox.frag");
 
 #pragma region "object_initialization"
     GLfloat skyboxVertices[] = {
@@ -152,6 +153,8 @@ int main() {
     // Draw as wireframe
 //    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+
+    float f = 0.0f;
     // loop
     while (!glfwWindowShouldClose(window)) {
         // Set frame time
@@ -161,7 +164,8 @@ int main() {
 
         // Check and call events
         glfwPollEvents();
-        Do_Movement();
+        Do_Movement(deltaTime, skyboxShader);
+        Update_Progress(deltaTime, skyboxShader);
 
         // Clear buffers
         glClearColor(1.0f, 1.f, 1.0f, 1.0f);
@@ -170,13 +174,11 @@ int main() {
         // Draw skybox first
         glDepthMask(GL_FALSE);// Remember to turn depth writing off
         skyboxShader.Use();
-        glm::mat4 view = glm::mat4( glm::mat3(camera.GetViewMatrix()));    // Remove any translation component of view
+        glm::mat4 view = glm::mat4(glm::mat3(camera.GetViewMatrix()));    // Remove any translation component of view
         glm::mat4 projection = glm::perspective(camera.Zoom, (float) screenWidth / (float) screenHeight, 0.1f, 100.0f);
         glUniformMatrix4fv(glGetUniformLocation(skyboxShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(glGetUniformLocation(skyboxShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-
-        // animation
-        glUniform1f(glGetUniformLocation(skyboxShader.Program, "progress"), Update_Progress(deltaTime));
+        glUniformMatrix4fv(glGetUniformLocation(skyboxShader.Program, "projection"), 1, GL_FALSE,
+                           glm::value_ptr(projection));
 
         // skybox cube
         glBindVertexArray(skyboxVAO);
@@ -195,7 +197,7 @@ int main() {
         // Then draw scene as normal
 //        shader.Use();
 //        view = camera.GetViewMatrix();
-//
+
 //        glUniformMatrix4fv(glGetUniformLocation(shader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
 //        glUniformMatrix4fv(glGetUniformLocation(shader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
@@ -210,45 +212,129 @@ int main() {
 
 #pragma region "User input"
 
-float Update_Progress(float deltaTime) {
+float Update_Progress(float deltaTime, Shader skyboxShader) {
     progress += direction * deltaTime * speed;
 
     if (progress > 1 || progress < 0) {
         direction = 0;
+    } else {
+        glUniform1f(glGetUniformLocation(skyboxShader.Program, "progress"), progress);
 
-//        if (progress <= 0) {
-//            progress = 1;
-//        } else {
-//            progress = 0;
-//        }
+        float distance = 0.7f;
+        glm::vec3 target = glm::vec3(0.340107, -0.017929, -0.550713);
+        glm::vec3 target2 = glm::vec3(-distance, -distance, -distance) * target;
+        glm::vec3 nvWorldPosition1 = glm::mix(vWorldPosition1, target, progress);
+        glm::vec3 nvWorldPosition2 = glm::mix(target2, vWorldPosition1, progress);
+
+        glUniform3f(glGetUniformLocation(skyboxShader.Program, "vWorldPosition1"),
+                    nvWorldPosition1.x,
+                    nvWorldPosition1.y,
+                    nvWorldPosition1.z);
+
+        glUniform3f(glGetUniformLocation(skyboxShader.Program, "vWorldPosition2"),
+                    nvWorldPosition2.x,
+                    nvWorldPosition2.y,
+                    nvWorldPosition2.z);
+
+        if (progress > 1) progress = 1.0f;
+        if (progress < 0) progress = 0.0f;
     }
 
     return progress;
 }
 
 // Moves/alters the camera positions based on user input
-void Do_Movement() {
+void Do_Movement(float deltaTime, Shader skyboxShader) {
+    if (progress > 1 || progress < 0) {
+        direction = 0.0f;
+    }
+
+    // debugger -- progress
+    if (keys[GLFW_KEY_T] || keys[GLFW_KEY_R]) {
+        if (keys[GLFW_KEY_T]) {
+            direction = 1.0f;
+        }
+        if (keys[GLFW_KEY_R]) {
+            direction = -1.0f;
+        }
+    }
+
+    // -- zoom
+    if (keys[GLFW_KEY_Q]) {
+        glm::mat4 view = glm::mat4(glm::mat3(camera.GetViewMatrix()));    // Remove any translation component of view
+        camera.ProcessMouseScroll(-cube_speed * deltaTime);
+        cout << glm::to_string(view) << endl;
+    }
+
+    if (keys[GLFW_KEY_W]) {
+        glm::mat4 view = glm::mat4(glm::mat3(camera.GetViewMatrix()));    // Remove any translation component of view
+        camera.ProcessMouseScroll(cube_speed * deltaTime);
+        cout << glm::to_string(view) << endl;
+    }
+
+    // -- pan
+    if (keys[GLFW_KEY_U] || keys[GLFW_KEY_I] || keys[GLFW_KEY_O] ||
+        keys[GLFW_KEY_J] || keys[GLFW_KEY_K] || keys[GLFW_KEY_L]) {
+
+        if (keys[GLFW_KEY_U]) {
+            vWorldPosition1.x += speed * deltaTime;
+        }
+
+        if (keys[GLFW_KEY_J]) {
+            vWorldPosition1.x -= speed * deltaTime;
+        }
+
+        if (keys[GLFW_KEY_I]) {
+            vWorldPosition1.y += speed * deltaTime;
+        }
+
+        if (keys[GLFW_KEY_K]) {
+            vWorldPosition1.y -= speed * deltaTime;
+        }
+
+        if (keys[GLFW_KEY_O]) {
+            vWorldPosition1.z += speed * deltaTime;
+        }
+
+        if (keys[GLFW_KEY_L]) {
+            vWorldPosition1.z -= speed * deltaTime;
+        }
+
+        glUniform3f(glGetUniformLocation(skyboxShader.Program, "vWorldPosition1"),
+                    vWorldPosition1.x,
+                    vWorldPosition1.y,
+                    vWorldPosition1.z);
+
+        cout << "Image vWorldPosition1: " << glm::to_string(vWorldPosition1) << endl;
+    }
+
+
     // Camera controls
-    if (keys[GLFW_KEY_UP]) {
+    if (keys[GLFW_KEY_SPACE]) {
+        progress = 0.0f;
         glm::vec2 cam = camera.GetPosition();
         if (position == 0 && abs(cam.x - (-54.0f)) <= tolerance) {
             direction = 1.0f;
-            position = 1;
         }
 
         if (position == 1 && abs(cam.x - (126.0f)) <= tolerance) {
             direction = -1.0f;
-            position = 0;
         }
     }
 
+    if (keys[GLFW_KEY_UP]) {
+        camera.ProcessMouseMovement(0.0f, -cube_speed);
+    }
+
+    if (keys[GLFW_KEY_DOWN]) {
+        camera.ProcessMouseMovement(0.0f, cube_speed);
+    }
+
     if (keys[GLFW_KEY_LEFT]) {
-//        camera.ProcessKeyboard(LEFT, deltaTime);
         camera.ProcessMouseMovement(-cube_speed, 0.0f);
     }
 
     if (keys[GLFW_KEY_RIGHT]) {
-//        camera.ProcessKeyboard(RIGHT, deltaTime);
         camera.ProcessMouseMovement(cube_speed, 0.0f);
     }
 }
