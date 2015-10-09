@@ -4,7 +4,8 @@ project(3DU)
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ ")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
-set(SOURCE_FILES  Main.h Main.cpp Shader.h Camera.h Model.h Model.cpp Triangulate.h Triangulate.cpp common.h fileOperations.h fileOperations.cpp)
+#set(SOURCE_FILES  Main.h Main.cpp Shader.h Camera.h Model.h Model.cpp Triangulate.h Triangulate.cpp common.h fileOperations.h fileOperations.cpp)
+set(SOURCE_FILES  ImageStitching.cpp ImageStitching.h)
 add_executable(3DU ${SOURCE_FILES})
 
 add_custom_command(TARGET 3DU POST_BUILD
